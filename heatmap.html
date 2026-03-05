@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Heatmap - Analytics Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>SSPA</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('heatmap') }}" class="nav-item active">
+                    <i class="fas fa-fire"></i>
+                    <span>Heatmap</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-header">
+                <h1><i class="fas fa-fire"></i> AI Performance Heatmap</h1>
+                <div class="heatmap-legend">
+                    <span><span class="legend-box excellent"></span> Excellent (80-100)</span>
+                    <span><span class="legend-box average"></span> Average (60-79)</span>
+                    <span><span class="legend-box weak"></span> Weak (40-59)</span>
+                    <span><span class="legend-box critical"></span> Critical (0-39)</span>
+                </div>
+            </div>
+
+            <div class="heatmap-container glass-card">
+                <div id="heatmapGrid" class="heatmap-grid">
+                    <div class="heatmap-loader">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading heatmap data...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="heatmap-insights glass-card">
+                <h3><i class="fas fa-lightbulb"></i> Heatmap Insights</h3>
+                <div id="heatmapInsights"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script>
+        loadHeatmap();
+
+        async function loadHeatmap() {
+            const res = await fetch('/api/heatmap-data');
+            const data = await res.json();
+            
+            if (data.students.length === 0) {
+                document.getElementById('heatmapGrid').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-fire"></i>
+                        <h3>No Data Available</h3>
+                        <p>Add students to subjects to see the performance heatmap</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="heatmap-table"><table><thead><tr><th>Student</th>';
+            data.subjects.forEach(subject => {
+                html += `<th>${subject}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            data.students.forEach(student => {
+                html += `<tr><td class="student-name">${student.name}</td>`;
+                data.subjects.forEach(subject => {
+                    const marks = student.subjects[subject];
+                    let colorClass = 'no-data';
+                    if (marks !== undefined) {
+                        if (marks >= 80) colorClass = 'excellent';
+                        else if (marks >= 60) colorClass = 'average';
+                        else if (marks >= 40) colorClass = 'weak';
+                        else colorClass = 'critical';
+                    }
+                    html += `<td class="heatmap-cell ${colorClass}" title="${marks !== undefined ? marks + '%' : 'No data'}">
+                        ${marks !== undefined ? marks : '-'}
+                    </td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            document.getElementById('heatmapGrid').innerHTML = html;
+            
+            // Generate insights
+            let insights = [];
+            data.students.forEach(student => {
+                const scores = Object.values(student.subjects);
+                const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                if (avg < 50) {
+                    insights.push(`${student.name} is struggling across multiple subjects (avg: ${avg.toFixed(1)}%)`);
+                }
+            });
+            
+            data.subjects.forEach(subject => {
+                const subjectScores = data.students
+                    .map(s => s.subjects[subject])
+                    .filter(s => s !== undefined);
+                if (subjectScores.length > 0) {
+                    const avg = subjectScores.reduce((a, b) => a + b, 0) / subjectScores.length;
+                    if (avg < 55) {
+                        insights.push(`${subject} has low class average (${avg.toFixed(1)}%) - needs attention`);
+                    }
+                }
+            });
+            
+            if (insights.length === 0) {
+                insights.push('Overall performance is good across all subjects!');
+            }
+            
+            document.getElementById('heatmapInsights').innerHTML = insights.map((insight, i) => `
+                <div class="insight-card" style="animation-delay: ${i * 0.1}s">
+                    <i class="fas fa-brain"></i>
+                    <p>${insight}</p>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

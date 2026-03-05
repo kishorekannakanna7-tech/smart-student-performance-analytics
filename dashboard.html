@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart Student Performance Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>SSPP</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item active">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('upload') }}" class="nav-item">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload Data</span>
+                </a>
+                <a href="{{ url_for('analytics') }}" class="nav-item">
+                    <i class="fas fa-table"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Dashboard Overview</h1>
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Welcome, Admin</span>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card-dash glass-card animate-slide-up">
+                    <div class="stat-icon-dash blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value">{{ total_students }}</h3>
+                        <p class="stat-label">Total Students</p>
+                    </div>
+                </div>
+
+                <div class="stat-card-dash glass-card animate-slide-up" style="animation-delay: 0.1s">
+                    <div class="stat-icon-dash green">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value">{{ avg_score }}%</h3>
+                        <p class="stat-label">Average Score</p>
+                    </div>
+                </div>
+
+                <div class="stat-card-dash glass-card animate-slide-up" style="animation-delay: 0.2s">
+                    <div class="stat-icon-dash red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value">{{ high_risk }}</h3>
+                        <p class="stat-label">High Risk Students</p>
+                    </div>
+                </div>
+
+                <div class="stat-card-dash glass-card animate-slide-up" style="animation-delay: 0.3s">
+                    <div class="stat-icon-dash purple">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value">{{ top_performers }}</h3>
+                        <p class="stat-label">Top Performers</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <div class="chart-card glass-card animate-fade-in">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i> Subject Performance
+                    </h3>
+                    <canvas id="subjectChart"></canvas>
+                </div>
+
+                <div class="chart-card glass-card animate-fade-in" style="animation-delay: 0.2s">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-pie"></i> Pass vs Fail
+                    </h3>
+                    <canvas id="passFailChart"></canvas>
+                </div>
+
+                <div class="chart-card glass-card animate-fade-in" style="animation-delay: 0.4s">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-line"></i> Risk Distribution
+                    </h3>
+                    <canvas id="riskChart"></canvas>
+                </div>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="insights-section glass-card animate-fade-in" style="animation-delay: 0.6s">
+                <h3 class="section-title">
+                    <i class="fas fa-lightbulb"></i> AI-Generated Insights
+                </h3>
+                <div id="insightsContainer" class="insights-grid">
+                    <div class="insight-loader">
+                        <i class="fas fa-spinner fa-spin"></i> Analyzing data...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Fetch and display charts
+        fetch('/api/chart-data')
+            .then(res => res.json())
+            .then(data => {
+                // Subject Performance Chart
+                new Chart(document.getElementById('subjectChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.subject_scores.labels,
+                        datasets: [{
+                            label: 'Average Marks',
+                            data: data.subject_scores.data,
+                            backgroundColor: [
+                                'rgba(99, 102, 241, 0.8)',
+                                'rgba(168, 85, 247, 0.8)',
+                                'rgba(236, 72, 153, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgb(99, 102, 241)',
+                                'rgb(168, 85, 247)',
+                                'rgb(236, 72, 153)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 2000,
+                            easing: 'easeInOutQuart'
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, max: 100 }
+                        }
+                    }
+                });
+
+                // Pass vs Fail Chart
+                new Chart(document.getElementById('passFailChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.pass_fail.labels,
+                        datasets: [{
+                            data: data.pass_fail.data,
+                            backgroundColor: [
+                                'rgba(74, 222, 128, 0.8)',
+                                'rgba(239, 68, 68, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgb(74, 222, 128)',
+                                'rgb(239, 68, 68)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 2000,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                });
+
+                // Risk Distribution Chart
+                new Chart(document.getElementById('riskChart'), {
+                    type: 'line',
+                    data: {
+                        labels: data.risk_distribution.labels,
+                        datasets: [{
+                            label: 'Number of Students',
+                            data: data.risk_distribution.data,
+                            borderColor: 'rgb(99, 102, 241)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 2000,
+                            easing: 'easeInOutQuart'
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            });
+
+        // Fetch and display insights
+        fetch('/api/insights')
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('insightsContainer');
+                container.innerHTML = '';
+                
+                data.insights.forEach((insight, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'insight-card';
+                    card.style.animationDelay = `${index * 0.1}s`;
+                    card.innerHTML = `
+                        <i class="fas fa-brain"></i>
+                        <p>${insight}</p>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject.name }} - Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>SSPA</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('heatmap') }}" class="nav-item">
+                    <i class="fas fa-fire"></i>
+                    <span>Heatmap</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-header">
+                <div>
+                    <h1>{{ subject.name }}</h1>
+                    <p class="subject-code-header">{{ subject.code }}</p>
+                </div>
+                <button class="btn btn-primary" onclick="showAddStudentModal()">
+                    <i class="fas fa-user-plus"></i> Add Student
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card-dash glass-card">
+                    <div class="stat-icon-dash blue">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value" id="totalStudents">0</h3>
+                        <p class="stat-label">Total Students</p>
+                    </div>
+                </div>
+
+                <div class="stat-card-dash glass-card">
+                    <div class="stat-icon-dash green">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value" id="avgScore">0%</h3>
+                        <p class="stat-label">Average Score</p>
+                    </div>
+                </div>
+
+                <div class="stat-card-dash glass-card">
+                    <div class="stat-icon-dash red">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value" id="highRisk">0</h3>
+                        <p class="stat-label">High Risk</p>
+                    </div>
+                </div>
+
+                <div class="stat-card-dash glass-card">
+                    <div class="stat-icon-dash purple">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3 class="stat-value" id="riskPercent">0%</h3>
+                        <p class="stat-label">Risk Percentage</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card glass-card">
+                    <h3><i class="fas fa-chart-bar"></i> Student Scores</h3>
+                    <canvas id="scoresChart"></canvas>
+                </div>
+
+                <div class="chart-card glass-card">
+                    <h3><i class="fas fa-chart-pie"></i> Pass vs Fail</h3>
+                    <canvas id="passFailChart"></canvas>
+                </div>
+            </div>
+
+            <div class="students-section">
+                <div class="glass-card">
+                    <h3><i class="fas fa-trophy"></i> Top Performers</h3>
+                    <div id="topStudents" class="students-list-mini"></div>
+                </div>
+
+                <div class="glass-card">
+                    <h3><i class="fas fa-exclamation-circle"></i> Needs Attention</h3>
+                    <div id="weakStudents" class="students-list-mini"></div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3><i class="fas fa-table"></i> All Students</h3>
+                <div class="table-container">
+                    <table class="students-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Register No.</th>
+                                <th>Attendance</th>
+                                <th>Internal</th>
+                                <th>Assignment</th>
+                                <th>Previous</th>
+                                <th>Risk Level</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="addStudentModal" class="modal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3>Add Student</h3>
+                <button class="btn-close" onclick="closeModal('addStudentModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addStudentForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Student Name</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Register Number</label>
+                        <input type="text" name="register_number" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Attendance (%)</label>
+                        <input type="number" name="attendance" min="0" max="100" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Internal Marks</label>
+                        <input type="number" name="internal_marks" min="0" max="100" step="0.1" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Assignment Marks</label>
+                        <input type="number" name="assignment_marks" min="0" max="100" step="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Previous Marks</label>
+                        <input type="number" name="previous_marks" min="0" max="100" step="0.1" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-save"></i> Add Student
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script>
+        const subjectId = {{ subject.id }};
+        loadAnalytics();
+
+        async function loadAnalytics() {
+            const res = await fetch(`/api/subjects/${subjectId}/analytics`);
+            const data = await res.json();
+            
+            document.getElementById('totalStudents').textContent = data.stats.total;
+            document.getElementById('avgScore').textContent = data.stats.avg_score + '%';
+            document.getElementById('highRisk').textContent = data.stats.high_risk;
+            document.getElementById('riskPercent').textContent = data.stats.risk_percentage + '%';
+            
+            if (data.charts.scores.length > 0) {
+                new Chart(document.getElementById('scoresChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: data.charts.names,
+                        datasets: [{
+                            label: 'Internal Marks',
+                            data: data.charts.scores,
+                            backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                            borderColor: 'rgb(99, 102, 241)',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 2000 },
+                        scales: { y: { beginAtZero: true, max: 100 } }
+                    }
+                });
+
+                new Chart(document.getElementById('passFailChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pass', 'Fail'],
+                        datasets: [{
+                            data: data.charts.pass_fail,
+                            backgroundColor: ['rgba(74, 222, 128, 0.8)', 'rgba(239, 68, 68, 0.8)']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: { duration: 2000 }
+                    }
+                });
+            }
+            
+            document.getElementById('topStudents').innerHTML = data.top_students.map(s => `
+                <div class="student-mini-card">
+                    <span>${s.name}</span>
+                    <span class="badge badge-success">${s.internal_marks}%</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('weakStudents').innerHTML = data.weak_students.map(s => `
+                <div class="student-mini-card">
+                    <span>${s.name}</span>
+                    <span class="badge badge-danger">${s.internal_marks}%</span>
+                </div>
+            `).join('');
+            
+            const students = await fetch(`/api/subjects/${subjectId}/students`).then(r => r.json());
+            document.getElementById('studentsTable').innerHTML = students.map(s => `
+                <tr class="${s.risk_level === 'High Risk' ? 'high-risk' : ''}">
+                    <td>${s.name}</td>
+                    <td>${s.register_number}</td>
+                    <td>${s.attendance}%</td>
+                    <td>${s.internal_marks}</td>
+                    <td>${s.assignment_marks}</td>
+                    <td>${s.previous_marks}</td>
+                    <td><span class="risk-badge ${s.risk_level.toLowerCase().replace(' ', '-')}">${s.risk_level}</span></td>
+                    <td><span class="grade-badge">${s.predicted_grade}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            const res = await fetch(`/api/subjects/${subjectId}/students`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
+            if (result.success) {
+                closeModal('addStudentModal');
+                e.target.reset();
+                loadAnalytics();
+            } else {
+                alert(result.message);
+            }
+        });
+    </script>
+</body>
+</html>

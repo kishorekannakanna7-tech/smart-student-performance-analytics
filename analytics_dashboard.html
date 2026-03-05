@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Analytics Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>SSPA</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('heatmap') }}" class="nav-item">
+                    <i class="fas fa-fire"></i>
+                    <span>Heatmap</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <h4>Subjects</h4>
+                    <button class="btn-icon" onclick="showAddSubjectModal()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div id="subjectsList" class="subjects-list"></div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Subject Management</h1>
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Welcome, Admin</span>
+                </div>
+            </div>
+
+            <div class="insights-section glass-card">
+                <h3><i class="fas fa-lightbulb"></i> AI Insights</h3>
+                <div id="insightsContainer" class="insights-grid">
+                    <div class="insight-loader">
+                        <i class="fas fa-spinner fa-spin"></i> Analyzing data...
+                    </div>
+                </div>
+            </div>
+
+            <div class="subjects-grid" id="subjectsGrid">
+                <div class="empty-state">
+                    <i class="fas fa-book"></i>
+                    <h3>No Subjects Yet</h3>
+                    <p>Create your first subject to get started</p>
+                    <button class="btn btn-primary" onclick="showAddSubjectModal()">
+                        <i class="fas fa-plus"></i> Add Subject
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="addSubjectModal" class="modal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3>Add New Subject</h3>
+                <button class="btn-close" onclick="closeModal('addSubjectModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="addSubjectForm">
+                <div class="form-group">
+                    <label>Subject Name</label>
+                    <input type="text" name="name" required placeholder="e.g., Data Structures">
+                </div>
+                <div class="form-group">
+                    <label>Subject Code</label>
+                    <input type="text" name="code" required placeholder="e.g., CS201">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-plus"></i> Add Subject
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="chatbot" class="chatbot">
+        <div class="chatbot-header" onclick="toggleChatbot()">
+            <i class="fas fa-robot"></i>
+            <span>AI Assistant</span>
+            <i class="fas fa-chevron-down" id="chatbotToggle"></i>
+        </div>
+        <div class="chatbot-body" id="chatbotBody">
+            <div class="chatbot-messages" id="chatMessages">
+                <div class="bot-message">
+                    Hi! I'm your AI assistant. Ask me about student performance, high-risk students, or subject analytics.
+                </div>
+            </div>
+            <div class="chatbot-input">
+                <input type="text" id="chatInput" placeholder="Ask me anything...">
+                <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+    <script>
+        loadSubjects();
+        loadInsights();
+
+        async function loadSubjects() {
+            const res = await fetch('/api/subjects');
+            const subjects = await res.json();
+            
+            const list = document.getElementById('subjectsList');
+            const grid = document.getElementById('subjectsGrid');
+            
+            if (subjects.length === 0) {
+                list.innerHTML = '<p class="empty-text">No subjects yet</p>';
+                return;
+            }
+            
+            list.innerHTML = subjects.map(s => `
+                <a href="/subject/${s.id}" class="subject-item">
+                    <i class="fas fa-book"></i>
+                    <span>${s.name}</span>
+                </a>
+            `).join('');
+            
+            grid.innerHTML = subjects.map(s => `
+                <div class="subject-card glass-card">
+                    <div class="subject-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3>${s.name}</h3>
+                    <p class="subject-code">${s.code}</p>
+                    <a href="/subject/${s.id}" class="btn btn-secondary btn-sm">
+                        View Analytics <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            `).join('');
+        }
+
+        async function loadInsights() {
+            const res = await fetch('/api/insights');
+            const data = await res.json();
+            const container = document.getElementById('insightsContainer');
+            
+            if (data.insights.length === 0) {
+                container.innerHTML = '<p class="empty-text">No insights available yet</p>';
+                return;
+            }
+            
+            container.innerHTML = data.insights.map((insight, i) => `
+                <div class="insight-card" style="animation-delay: ${i * 0.1}s">
+                    <i class="fas fa-brain"></i>
+                    <p>${insight}</p>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('addSubjectForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            const res = await fetch('/api/subjects', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
+            if (result.success) {
+                closeModal('addSubjectModal');
+                e.target.reset();
+                loadSubjects();
+                loadInsights();
+            } else {
+                alert(result.message);
+            }
+        });
+    </script>
+</body>
+</html>

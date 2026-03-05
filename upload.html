@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Data - Smart Student Performance Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>SSPP</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('upload') }}" class="nav-item active">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload Data</span>
+                </a>
+                <a href="{{ url_for('analytics') }}" class="nav-item">
+                    <i class="fas fa-table"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Upload Student Data</h1>
+            </div>
+
+            <div class="upload-container">
+                <!-- Manual Entry Form -->
+                <div class="upload-card glass-card animate-slide-up">
+                    <div class="card-header">
+                        <i class="fas fa-edit"></i>
+                        <h3>Manual Entry</h3>
+                    </div>
+                    
+                    <form id="manualForm" class="upload-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Student Name</label>
+                                <input type="text" name="name" required placeholder="Enter full name">
+                            </div>
+                            <div class="form-group">
+                                <label>Register Number</label>
+                                <input type="text" name="register_number" required placeholder="e.g., 2024001">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Attendance (%)</label>
+                                <input type="number" name="attendance" min="0" max="100" step="0.1" required placeholder="0-100">
+                            </div>
+                            <div class="form-group">
+                                <label>Internal Marks</label>
+                                <input type="number" name="internal_marks" min="0" max="100" step="0.1" required placeholder="0-100">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Assignment Marks</label>
+                                <input type="number" name="assignment_marks" min="0" max="100" step="0.1" required placeholder="0-100">
+                            </div>
+                            <div class="form-group">
+                                <label>Previous Semester Marks</label>
+                                <input type="number" name="previous_marks" min="0" max="100" step="0.1" required placeholder="0-100">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-glow">
+                            <i class="fas fa-save"></i> Add Student
+                        </button>
+                    </form>
+                </div>
+
+                <!-- CSV Upload -->
+                <div class="upload-card glass-card animate-slide-up" style="animation-delay: 0.2s">
+                    <div class="card-header">
+                        <i class="fas fa-file-csv"></i>
+                        <h3>CSV Upload</h3>
+                    </div>
+                    
+                    <div class="csv-upload-area">
+                        <form id="csvForm">
+                            <div class="file-drop-zone" id="dropZone">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <h4>Drag & Drop CSV File</h4>
+                                <p>or click to browse</p>
+                                <input type="file" id="csvFile" name="csv_file" accept=".csv" hidden>
+                            </div>
+                            <div id="fileName" class="file-name"></div>
+                            <button type="submit" class="btn btn-primary btn-glow" id="uploadBtn" style="display: none;">
+                                <i class="fas fa-upload"></i> Upload CSV
+                            </button>
+                        </form>
+
+                        <div class="csv-format-info">
+                            <h4><i class="fas fa-info-circle"></i> CSV Format</h4>
+                            <p>Required columns: name, register_number, attendance, internal_marks, assignment_marks, previous_marks</p>
+                            <a href="#" class="download-sample" onclick="downloadSample(); return false;">
+                                <i class="fas fa-download"></i> Download Sample CSV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal">
+        <div class="modal-content glass-card">
+            <div class="success-animation">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Success!</h2>
+            <p>Student data has been uploaded successfully</p>
+            <button onclick="closeModal()" class="btn btn-primary">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        // Manual form submission
+        document.getElementById('manualForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccessModal();
+                    e.target.reset();
+                }
+            } catch (error) {
+                alert('Error uploading data');
+            }
+        });
+
+        // CSV upload handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('csvFile');
+        const fileName = document.getElementById('fileName');
+        const uploadBtn = document.getElementById('uploadBtn');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+                displayFileName(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                displayFileName(e.target.files[0]);
+            }
+        });
+
+        function displayFileName(file) {
+            fileName.innerHTML = `<i class="fas fa-file-csv"></i> ${file.name}`;
+            uploadBtn.style.display = 'block';
+        }
+
+        document.getElementById('csvForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showSuccessModal();
+                    e.target.reset();
+                    fileName.innerHTML = '';
+                    uploadBtn.style.display = 'none';
+                }
+            } catch (error) {
+                alert('Error uploading CSV');
+            }
+        });
+
+        function showSuccessModal() {
+            document.getElementById('successModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('successModal').style.display = 'none';
+        }
+
+        function downloadSample() {
+            const csv = 'name,register_number,attendance,internal_marks,assignment_marks,previous_marks\nJohn Doe,2024001,85,75,80,70\nJane Smith,2024002,90,85,88,82';
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sample_students.csv';
+            a.click();
+        }
+    </script>
+</body>
+</html>

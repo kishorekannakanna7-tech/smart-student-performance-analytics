@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - Smart Student Performance Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dashboard-page">
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-card">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>SSPP</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard') }}" class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="{{ url_for('upload') }}" class="nav-item">
+                    <i class="fas fa-upload"></i>
+                    <span>Upload Data</span>
+                </a>
+                <a href="{{ url_for('analytics') }}" class="nav-item active">
+                    <i class="fas fa-table"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-header">
+                <h1>Student Analytics</h1>
+                <a href="{{ url_for('export_csv') }}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Export CSV
+                </a>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-section glass-card">
+                <div class="filter-group">
+                    <input type="text" id="searchInput" placeholder="Search by name or register number..." class="search-input">
+                </div>
+                <div class="filter-group">
+                    <select id="riskFilter" class="filter-select">
+                        <option value="all">All Risk Levels</option>
+                        <option value="High Risk">High Risk</option>
+                        <option value="Medium Risk">Medium Risk</option>
+                        <option value="Low Risk">Low Risk</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Students Table -->
+            <div class="table-container glass-card">
+                <table class="students-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Register No.</th>
+                            <th>Attendance</th>
+                            <th>Internal</th>
+                            <th>Assignment</th>
+                            <th>Previous</th>
+                            <th>Risk Level</th>
+                            <th>Grade</th>
+                            <th>Pass %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody">
+                        {% if students %}
+                            {% for student in students %}
+                            <tr class="student-row {% if student[7] == 'High Risk' %}high-risk{% endif %}">
+                                <td>{{ student[1] }}</td>
+                                <td>{{ student[2] }}</td>
+                                <td>{{ student[3] }}%</td>
+                                <td>{{ student[4] }}</td>
+                                <td>{{ student[5] }}</td>
+                                <td>{{ student[6] }}</td>
+                                <td>
+                                    <span class="risk-badge {{ student[7].lower().replace(' ', '-') }}">
+                                        {{ student[7] }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="grade-badge">{{ student[8] }}</span>
+                                </td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: {{ student[9] }}%"></div>
+                                        <span class="progress-text">{{ student[9] }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="no-data">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>No student data available. Upload data to get started.</p>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', filterTable);
+        document.getElementById('riskFilter').addEventListener('change', filterTable);
+
+        function filterTable() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            const riskValue = document.getElementById('riskFilter').value;
+            
+            const params = new URLSearchParams();
+            if (searchValue) params.append('search', searchValue);
+            if (riskValue !== 'all') params.append('risk', riskValue);
+            
+            window.location.href = '/analytics?' + params.toString();
+        }
+
+        // Animate table rows on load
+        document.querySelectorAll('.student-row').forEach((row, index) => {
+            row.style.animation = `fadeInUp 0.5s ease forwards ${index * 0.05}s`;
+            row.style.opacity = '0';
+        });
+    </script>
+</body>
+</html>
